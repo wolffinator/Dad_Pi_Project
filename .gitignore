@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 # backup files
-.bac
-.swp
+*.bac
+*.swp
