@@ -34,7 +34,7 @@ def main():
     print("Outputting accelerometer data...")
 
     while True:
-        start_time_ns = time.time_ns()
+        start_time_ns = time.time()
         for i in range(10000):
             x, y, z = accelerometer.acceleration
             accel_magnitude = math.sqrt(x ** 2 + y ** 2 + z ** 2)
@@ -43,9 +43,9 @@ def main():
             bin_array = floating_point_to_fixed_point_bin_array(jerk)
             output_gpio_data(bin_array)
             last_accel_magnitude = accel_magnitude
-        end_time_ns = time.time_ns()
+        end_time_ns = time.time()
         loop_time = (start_time_ns - end_time_ns) / 10000
-        print("The average time to output is " + str(loop_time) + " nanoseconds")
+        print("The average time to output is " + str(loop_time) + " seconds")
 
 
 def floating_point_to_fixed_point_bin_array(float_in):
