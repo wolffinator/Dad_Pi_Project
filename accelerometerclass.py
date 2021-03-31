@@ -39,8 +39,8 @@ def main():
 
 class AccelerometerClass:
     PINS_BOARD = [11, 13, 15, 29, 31, 33, 35, 37]
-    PINS_BCM = [0, 2, 3, 21, 22, 23, 24]
-    PIN_NUMBERS = [0, 2, 3, 21, 22, 23, 24]
+    PINS_BCM = [0, 2, 3, 21, 22, 23, 24, 25]
+    PIN_NUMBERS = [0, 2, 3, 21, 22, 23, 24, 25]
 
     ACK_BOARD = 36
     ACK_BCM = 27
