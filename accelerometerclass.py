@@ -13,22 +13,6 @@ MAX_MAGNITUDE = 2.0  # Maximum number representable and starting position for cr
 # The next most significant bit would be MAX_MAGNITUDE/4,
 # The next would be MAX_MAGNITUDE/8 and so on.
 
-BIT1 = 11
-BIT2 = 13
-BIT3 = 15
-BIT4 = 29
-BIT5 = 31
-BIT6 = 33
-BIT7 = 35
-BIT8 = 37
-
-
-
-ACK_IN = 36
-SEND_READY = 38
-OFFPIN_IN = 40
-
-
 def main():
     import board  # Weird import location due to startup error on coding computer
     i2c = busio.I2C(board.SCL, board.SDA)
@@ -36,26 +20,39 @@ def main():
     last_accel_magnitude = 0
     print("Outputting accelerometer data...")
     AccelerometerClass.setup_gpio()
-    while True:
-        start_time_ns = time.time()
-        for i in range(10000):
-            x, y, z = accelerometer.acceleration
-            accel_magnitude = math.sqrt(x ** 2 + y ** 2 + z ** 2)
-            # TODO: Maybe add compensation for delta time
-            jerk = abs(accel_magnitude - last_accel_magnitude)
-            bin_array = AccelerometerClass.floating_point_to_fixed_point_bin_array(jerk)
-            AccelerometerClass.output_gpio_data(bin_array)
-            last_accel_magnitude = accel_magnitude
-        end_time_ns = time.time()
-        loop_time = (start_time_ns - end_time_ns) / 10000
-        print("The average time to output is " + str(loop_time) + " seconds")
-
+    try:
+        while True:
+            start_time_ns = time.time()
+            for i in range(10000):
+                x, y, z = accelerometer.acceleration
+                accel_magnitude = math.sqrt(x ** 2 + y ** 2 + z ** 2)
+                # TODO: Maybe add compensation for delta time
+                jerk = abs(accel_magnitude - last_accel_magnitude)
+                bin_array = AccelerometerClass.floating_point_to_fixed_point_bin_array(jerk)
+                AccelerometerClass.output_gpio_data(bin_array)
+                last_accel_magnitude = accel_magnitude
+            end_time_ns = time.time()
+            loop_time = (start_time_ns - end_time_ns) / 10000
+            print("The average time to output is " + str(loop_time) + " seconds")
+    except:
+        AccelerometerClass.cleanup_pins()
 
 class AccelerometerClass:
     PINS_BOARD = [11, 13, 15, 29, 31, 33, 35, 37]
     PINS_BCM = [0, 2, 3, 21, 22, 23, 24]
-
     PIN_NUMBERS = [0, 2, 3, 21, 22, 23, 24]
+
+    ACK_BOARD = 36
+    ACK_BCM = 27
+    ACK = ACK_BCM
+
+    SEND_READY_BOARD = 38
+    SEND_READY_BCM = 28
+    SEND_READY = SEND_READY_BCM
+
+    OFFPIN_IN_BOARD = 40
+    OFFPIN_IN_BCM = 29
+    OFFPIN_IN = OFFPIN_IN_BCM
 
 
     @staticmethod
@@ -83,7 +80,7 @@ class AccelerometerClass:
         print("The pins should light up in sequential order. (LSB to MSB)")
         print("The SEND_READY pin will stay high.")
         print("Press ctrl-C to continue")
-        GPIO.output(SEND_READY, GPIO.HIGH)
+        GPIO.output(AccelerometerClass.SEND_READY, GPIO.HIGH)
         try:
             while True:
                 for pin_number in AccelerometerClass.PIN_NUMBERS:
@@ -95,15 +92,15 @@ class AccelerometerClass:
 
     @staticmethod
     def cleanup_pins():
-        GPIO.output(BIT1, GPIO.LOW)
-        GPIO.output(BIT2, GPIO.LOW)
-        GPIO.output(BIT3, GPIO.LOW)
-        GPIO.output(BIT4, GPIO.LOW)
-        GPIO.output(BIT5, GPIO.LOW)
-        GPIO.output(BIT6, GPIO.LOW)
-        GPIO.output(BIT7, GPIO.LOW)
-        GPIO.output(BIT8, GPIO.LOW)
-        GPIO.output(SEND_READY, GPIO.LOW)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[0], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[1], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[2], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[3], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[4], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[5], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[6], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[7], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.SEND_READY, GPIO.OUT)
         GPIO.cleanup()
 
     @staticmethod
@@ -121,36 +118,48 @@ class AccelerometerClass:
         # GPIO.setwarnings(False)
         if GPIO.getmode() == GPIO.BCM:
             AccelerometerClass.PIN_NUMBERS = AccelerometerClass.PINS_BCM
+
+            AccelerometerClass.ACK = AccelerometerClass.ACK_BCM
+            AccelerometerClass.SEND_READY = AccelerometerClass.SEND_READY_BCM
+            AccelerometerClass.OFFPIN_IN = AccelerometerClass.OFFPIN_IN_BCM
         elif GPIO.getmode() == GPIO.BOARD:
             AccelerometerClass.PIN_NUMBERS = AccelerometerClass.PINS_BOARD
+
+            AccelerometerClass.ACK = AccelerometerClass.ACK_BOARD
+            AccelerometerClass.SEND_READY = AccelerometerClass.SEND_READY_BOARD
+            AccelerometerClass.OFFPIN_IN = AccelerometerClass.OFFPIN_IN_BOARD
         else:
             GPIO.setmode(GPIO.BOARD)
             AccelerometerClass.PIN_NUMBERS = AccelerometerClass.PINS_BOARD
+
+            AccelerometerClass.ACK = AccelerometerClass.ACK_BOARD
+            AccelerometerClass.SEND_READY = AccelerometerClass.SEND_READY_BOARD
+            AccelerometerClass.OFFPIN_IN = AccelerometerClass.OFFPIN_IN_BOARD
         # Setup output GPIO pins
-        GPIO.setup(BIT1, GPIO.OUT)
-        GPIO.setup(BIT2, GPIO.OUT)
-        GPIO.setup(BIT3, GPIO.OUT)
-        GPIO.setup(BIT4, GPIO.OUT)
-        GPIO.setup(BIT5, GPIO.OUT)
-        GPIO.setup(BIT6, GPIO.OUT)
-        GPIO.setup(BIT7, GPIO.OUT)
-        GPIO.setup(BIT8, GPIO.OUT)
-        GPIO.setup(SEND_READY, GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[0], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[1], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[2], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[3], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[4], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[5], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[6], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.PIN_NUMBERS[7], GPIO.OUT)
+        GPIO.setup(AccelerometerClass.SEND_READY, GPIO.OUT)
 
         # Set all GPIO pins low to start
-        GPIO.output(BIT1, GPIO.LOW)
-        GPIO.output(BIT2, GPIO.LOW)
-        GPIO.output(BIT3, GPIO.LOW)
-        GPIO.output(BIT4, GPIO.LOW)
-        GPIO.output(BIT5, GPIO.LOW)
-        GPIO.output(BIT6, GPIO.LOW)
-        GPIO.output(BIT7, GPIO.LOW)
-        GPIO.output(BIT8, GPIO.LOW)
-        GPIO.output(SEND_READY, GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[0], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[1], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[2], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[3], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[4], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[5], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[6], GPIO.LOW)
+        GPIO.output(AccelerometerClass.PIN_NUMBERS[7], GPIO.LOW)
+        GPIO.output(AccelerometerClass.SEND_READY, GPIO.LOW)
 
         # Setup input GPIO pins
-        GPIO.setup(ACK_IN, GPIO.IN)
-        GPIO.setup(OFFPIN_IN, GPIO.IN)
+        GPIO.setup(AccelerometerClass.ACK, GPIO.IN)
+        GPIO.setup(AccelerometerClass.OFFPIN_IN, GPIO.IN)
 
 
 if __name__ == "__main__":
